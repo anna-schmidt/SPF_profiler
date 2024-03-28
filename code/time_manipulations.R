@@ -18,4 +18,4 @@ master_times$hour_profile.datetime <- hour(master_times$profile.datetime)
 
 # get rid of extra date/time columns
 master_times <- master_times %>%
-  select(-c(datetime, day_datetime, month_datetime, year_datetime, time_datetime, time_profiledatetime ))
+  select(-c(datetime, day_datetime, month_datetime, year_datetime, time_datetime, time_profiledatetime, test,doy_datetime, doy_profiledatetime, depth, profile.datetime,pH..mV.,chlorophyll..RFU.,phycocyanin..RFU.,oxygen.satuation,power,number.of.measurements,version,oxidation.reduction.potential,phycoeritrin,phycoeritrin..RFU.))
