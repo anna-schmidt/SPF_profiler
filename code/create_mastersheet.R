@@ -54,12 +54,12 @@ master_cleaned_3 <- master_cleaned_2 %>%
          time_profiledatetime = paste(hour(profile.datetime), minute(profile.datetime), second(profile.datetime), sep = ":")) %>%
   mutate(test = doy_datetime - doy_profiledatetime)
 
+# Add column with fish treatment information
+master_cleaned_3 <- master_cleaned_3 %>%
+  mutate(fish_treatment = case_when(enclosure %in% c("E02", "E07", "E08", "E14", "E17", "E19", "E23") ~ "yes",
+                               enclosure %in% c("E01", "E09", "E10", "E12", "E16", "E18", "E24") ~ "no",
+                               enclosure == "L01" ~ "lake"))
+
 # Do the datetime and profile.datetime dates always match exactly? 
 table(master_cleaned_3$test)
 # yes except for 3 occasions
-
-# To do:
-# Figure out which date and time to use
-# Visualize dates we have data for for each enclosure
-# Check for missing values
-# Visualize correlated variables
