@@ -73,7 +73,35 @@ master_times %>%
   ggplot(aes(y = water.temperature, x = month_profiledatetime, fill = month_profiledatetime)) +
   geom_violin()
 
-# etc...for the other variables
+# conductivity by month
+master_times %>%
+  ggplot(aes(y = conductivity, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
+
+# pH.value by month
+master_times %>%
+  ggplot(aes(y = pH.value, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
+
+# chlorophyll by month
+master_times %>%
+  ggplot(aes(y = chlorophyll.a, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
+
+# phycocyanin by month
+master_times %>%
+  ggplot(aes(y = phycocyanin, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
+
+# oxygen concentration by month
+master_times %>%
+  ggplot(aes(y = oxygen.concentration, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
+
+# photosynthetically.active.radiation.up by month
+master_times %>%
+  ggplot(aes(y = photosynthetically.active.radiation.up, x = month_profiledatetime, fill = month_profiledatetime)) +
+  geom_violin()
 
 # See http://www.sthda.com/english/wiki/ggplot2-violin-plot-quick-start-guide-r-software-and-data-visualization for more customization of violin plots
 # Do we like violin plots or boxplots better?
