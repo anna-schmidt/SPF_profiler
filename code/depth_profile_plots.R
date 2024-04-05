@@ -60,3 +60,16 @@ plot_profile_overlay <- function(data, x, enclosure.id) {
 plot_profile_overlay(data = data_12, x = water.temperature, enclosure.id = "E01")
 plot_profile_overlay(data = data_12, x = water.temperature, enclosure.id = "E02")
 #....etc
+
+##############
+enclosure_ids <- c("E01", "E02", "E07", "E08", "E09", "E10", "E12", "E14", "E16", "E17", "E18", "E19", "E23", "E24", "L01")
+
+variables <- c("water.temperature", "conductivity", "pH.value","oxygen.concentration","chlorophyll.a","phycocyanin","photosynthetically.active.radiation.up")
+
+# disclaimer - I do not understand the code below from chatgpt lol - Hannah
+for (id in enclosure_ids) {
+  for (variable in variables) {
+    plot_profile_overlay(data = data_12, x = !!sym(variable), enclosure.id = id)
+    ggsave(filename = paste0("plot_", id, "_", variable, ".png"), width = 8, height = 6) # Save each plot with a unique filename
+  }
+}
