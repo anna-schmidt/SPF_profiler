@@ -57,22 +57,6 @@ filtered_conduc <- master_cleaning %>%
          !(enclosure == "E23" & conductivity > 280))
 ####-------------removed 37 points
 
-# pH.value by depth
-pH1 <- ggplot(master_cleaning, aes(x = specified.depth, y = pH.value)) +
-  geom_point() +
-  facet_wrap(~ enclosure, nrow = 4) +
-  labs(x = "specified.depth", y = "pH")
-pH1
-
-# pH.value by time
-pH2 <- ggplot(master_cleaning, aes(x = hour_profile.datetime, y = pH.value)) +
-  geom_point() +
-  facet_wrap(~ enclosure, nrow = 4) +
-  labs(x = "hour", y = "pH")
-pH2
-
-# pH = E01 funky but no points jump out in particular for other plots
-
 ##
 
 # chlorophyll.a by depth
@@ -115,6 +99,32 @@ phyco2 <- ggplot(master_cleaning, aes(x = hour_profile.datetime, y = phycocyanin
   labs(x = "hour", y = "phycocyanin")
 phyco2
 
+####-------------
+filtered_phyco <- filtered_chloro %>%
+  filter(!(enclosure == "E01" & phycocyanin > 2),
+         !(enclosure == "E08" & phycocyanin > 3),
+         !(enclosure == "E09" & phycocyanin > 2),
+         !(enclosure == "E09" & phycocyanin > 2))
+####------------- # removed 13 more points
+
+##
+
+# pH.value by depth
+pH1 <- ggplot(master_cleaning, aes(x = specified.depth, y = pH.value)) +
+  geom_point() +
+  facet_wrap(~ enclosure, nrow = 4) +
+  labs(x = "specified.depth", y = "pH")
+pH1
+
+# pH.value by time
+pH2 <- ggplot(master_cleaning, aes(x = hour_profile.datetime, y = pH.value)) +
+  geom_point() +
+  facet_wrap(~ enclosure, nrow = 4) +
+  labs(x = "hour", y = "pH")
+pH2
+
+# pH = E01 funky but no points jump out in particular for other plots
+
 ##
 
 # oxygen.concentration by depth
@@ -150,3 +160,35 @@ par2 <- ggplot(master_cleaning, aes(x = hour_profile.datetime, y = photosyntheti
 par2
 
 # PAR = no clear outliers
+
+
+######
+
+# Removing further outliers based on profile_depth_plots_pngs
+
+cleaned_chlorophyll <- filtered_phyco%>%
+  filter(!(enclosure == "E01" & specified.depth > 15 & chlorophyll.a > 15),
+         !(enclosure == "E02" & chlorophyll.a > 40),
+         !(enclosure == "E02" & profile.datetime == "2023-05-11 00:00:00" & chlorophyll.a > 20),
+         !(enclosure == "E07" & chlorophyll.a > 25),
+         !(enclosure == "E08" & chlorophyll.a > 30),
+         !(enclosure == "E09" & chlorophyll.a > 25),
+         !(enclosure == "E10" & chlorophyll.a > 25),
+         !(enclosure == "E12" & chlorophyll.a > 15),
+         !(enclosure == "E14" & chlorophyll.a > 15),
+         !(enclosure == "E14" & profile.datetime %in% c("2023-04-29 00:00:00", "2023-05-13 00:00:00", "2023-05-17 00:00:00", "2023-06-01 00:00:00") & chlorophyll.a > 10),
+         !(enclosure == "E16" & profile.datetime %in% c("2023-05-19 00:00:00","2023-05-21 00:00:00") & specified.depth < 5 & chlorophyll.a > 10),
+         !(enclosure == "E17" & chlorophyll.a > 25),
+         !(enclosure == "E18" & chlorophyll.a > 15),
+         !(enclosure == "E19" & chlorophyll.a > 25),
+         !(enclosure == "E23" & profile.datetime %in% c("2023-05-01 00:00:00", "2023-05-12 00:00:00", "2023-05-19 00:00:00", "2023-05-20 00:00:00", "2023-05-23 00:00:00","2023-05-24 00:00:00") & chlorophyll.a > 20),
+         !(enclosure == "E23" & profile.datetime %in% c("2023-05-25 00:00:00","2023-05-26 00:00:00","2023-05-27 00:00:00","2023-05-29 00:00:00","2023-06-01 00:00:00","2023-06-02 00:00:00") & chlorophyll.a > 25),
+         !(enclosure == "E24" & chlorophyll.a > 30),
+         !(enclosure == "L01" & chlorophyll.a > 15))
+####------------- # removed 287 more points
+
+
+
+
+
+
