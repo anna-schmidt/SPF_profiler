@@ -165,6 +165,9 @@ par2
 ######
 
 # Removing further outliers based on profile_depth_plots_pngs
+## water.temperature and PAR treated as no outliers present
+
+# chlorophyll
 
 cleaned_chlorophyll <- filtered_phyco%>%
   filter(!(enclosure == "E01" & specified.depth > 15 & chlorophyll.a > 15),
@@ -185,10 +188,51 @@ cleaned_chlorophyll <- filtered_phyco%>%
          !(enclosure == "E23" & profile.datetime %in% c("2023-05-25 00:00:00","2023-05-26 00:00:00","2023-05-27 00:00:00","2023-05-29 00:00:00","2023-06-01 00:00:00","2023-06-02 00:00:00") & chlorophyll.a > 25),
          !(enclosure == "E24" & chlorophyll.a > 30),
          !(enclosure == "L01" & chlorophyll.a > 15))
-####------------- # removed 287 more points
+####------------- # removed 287 more rows
+
+# phycocyanin
+
+cleaned_phyco <- cleaned_chlorophyll %>%
+  filter(!(enclosure != "E24" & phycocyanin > 2),
+         !(enclosure == "E01" & specified.depth < 5 & phycocyanin > 0.5),
+         !(enclosure == "E02" & phycocyanin > 1),
+         !(enclosure == "E07" & specified.depth < 5 & phycocyanin > 1),
+         !(enclosure == "E07" & specified.depth > 15 & phycocyanin > 1),
+         !(enclosure == "E08" & specified.depth < 5 & phycocyanin > 1),
+         !(enclosure == "E08" & specified.depth > 10 & phycocyanin > 1.5),
+         !(enclosure == "E09" & phycocyanin > 1),
+         !(enclosure == "E10" & phycocyanin > 1),
+         !(enclosure == "E12" & profile.datetime == "2023-05-21 00:00:00" & specified.depth < 6 & phycocyanin > 0.2),
+         !(enclosure == "E12" & phycocyanin > 0.6),
+         !(enclosure == "E14" & phycocyanin > 0.6),
+         !(enclosure == "E14" & specified.depth < 10 & phycocyanin > 0.4),
+         !(enclosure == "E16" & specified.depth < 6 & phycocyanin > 0.6),
+         !(enclosure == "E17" & phycocyanin > 0.6),
+         !(enclosure == "E18" & phycocyanin > 0.6),
+         !(enclosure == "E19" & profile.datetime %in% c("2023-04-30 00:00:00","2023-05-18 00:00:00","2023-05-19 00:00:00","2023-05-20 00:00:00","2023-05-21 00:00:00","2023-05-23 00:00:00","2023-05-24 00:00:00","2023-05-25 00:00:00") & specified.depth < 10 & phycocyanin > 0.5),
+         !(enclosure == "E19" & phycocyanin > 1.5),
+         !(enclosure == "E23" & specified.depth < 10 & phycocyanin > 0.75))
+         #!(enclosure == "L01")) ## funky graph!
+####------------- # removed 494 more rows
 
 
+# oxygen concentration
 
+cleaned_oxygen <- cleaned_phyco %>%
+  filter(!(enclosure == "E01" & specified.depth < 10 & oxygen.concentration < 10),
+         !(enclosure == "E19" & profile.datetime %in% c("2023-04-25 00:00:00","2023-05-26 00:00:00") & oxygen.concentration < 6))
+####------------- # removed 1 more row
 
+# conductivity
+cleaned_final <- cleaned_oxygen %>%
+  filter(!(enclosure == "E01" & conductivity > 300),
+         !(enclosure == "E19" & profile.datetime %in% c("2023-04-25 00:00:00","2023-05-05 00:00:00") & conductivity > 275),
+         !(enclosure == "E23" & profile.datetime == "2023-05-23 00:00:00" & specified.depth < 10 & conductivity > 265))
+# E09, funky clustering by hour but didn't remove any rows for that enclosure...
+####------------- # removed 0 more rows
+
+# pH
+
+# E01 - something happened evening 05-15; big shift, starts to slowly re-balance; no other major outliers seens
 
 
