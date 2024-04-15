@@ -1,5 +1,5 @@
 #------------------------------
-# Heatmaps - iterative with a function
+# Heatmaps - chlorophyll-a for all mesocosms
 #------------------------------
 
 # Load packages
@@ -15,7 +15,7 @@ data <- cleaned_final
 # Make a column with just the date
 data <- data %>% mutate(sampledate = date(profile.datetime))
 
-# Make a subset of the data frame with just noon values and just E01
+# Make a subset of the data frame with just noon values
 data_12 <- data %>% subset(hour_profile.datetime == "12") 
 
 # FUNCTION
@@ -66,7 +66,8 @@ test_function <- function(data, enclosure.id, parameter.name, max_depth, contour
   
   # Plotting
   ggplot(f2) +
-    geom_contour_filled(aes(x = sampledate, y = specified.depth, z = var), alpha = 0.8) +
+    geom_contour_filled(aes(x = sampledate, y = specified.depth, z = var), alpha = 0.8,
+                        breaks = contour_breaks) +
     scale_fill_gradientn(colours = c("#440154","#46327e","#365c8d","#277f8e",
                                      "#1fa187","#4ac16d","#a0da39","#fde725"),
                          super = metR::ScaleDiscretised,
@@ -87,81 +88,47 @@ test_function <- function(data, enclosure.id, parameter.name, max_depth, contour
 
 # Example usage:
 test_function(data = data_12, enclosure.id = "E01", max_depth = 20,
-              parameter.name = "oxygen.concentration",  
-              contour_breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20))
+              parameter.name = "chlorophyll.a",  
+              contour_breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26))
 
+# Iterating over all mesocosms:
 
+# List of enclosure IDs and their corresponding max depths
+enclosure_info <- list(
+  "E01" = 19.5,
+  "E02" = 19.5,
+  "E07" = 16.5,
+  "E08" = 16.5,
+  "E09" = 16.5,
+  "E10" = 16.5,
+  "E12" = 17.5,
+  "E14" = 19.5,
+  "E16" = 19.0,
+  "E17" = 18.0,
+  "E18" = 17.5,
+  "E19" = 16.0,
+  "E23" = 15.5,
+  "E24" = 16.5,
+  "L01" = 20.5)
 
+# Set other parameters
+parameter_name <- "chlorophyll.a"
+contour_breaks <- c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26)
 
-
-
-library(purrr)
-
-# Function to create plots iteratively
-create_plots <- function(data, enclosure_ids, max_depths, parameter_names, contour_breaks_list) {
-  plots_list <- list()
+# Create plots for each enclosure ID
+for (enclosure_id in names(enclosure_info)) {
+  max_depth <- enclosure_info[[enclosure_id]]
   
-  for (enclosure_id in enclosure_ids) {
-    enclosure_plots <- list()
-    
-    for (i in seq_along(parameter_names)) {
-      parameter <- parameter_names[[i]]
-      contour_breaks <- contour_breaks_list[[i]]$contour_breaks
-      
-      plot <- test_function(data = data, 
-                            enclosure.id = enclosure_id, 
-                            parameter.name = parameter, 
-                            max_depth = max_depths[[i]], 
-                            contour_breaks = contour_breaks)
-      
-      plot_name <- paste0("heatmap_plots_pngs/test/", enclosure_id, "_", parameter, ".png")
-      ggsave(filename = plot_name, plot = plot, width = 30, height = 18)
-      
-      enclosure_plots[[parameter]] <- plot_name
-    }
-    
-    plots_list[[enclosure_id]] <- enclosure_plots
-  }
+  # Call test_function with current enclosure ID and parameters
+  plot <- test_function(data = data_12, 
+                        enclosure.id = enclosure_id, 
+                        max_depth = max_depth, 
+                        parameter.name = parameter_name, 
+                        contour_breaks = contour_breaks)
   
-  return(plots_list)
+  # Construct file name
+  file_name <- paste0("heatmap_plots_pngs/chlorophyll/12/", enclosure_id, "_", parameter_name, ".png")
+
+  # Save the plot
+  ggsave(filename = file_name, plot = plot)
 }
-
-# Example data
-data_12 <- data_12
-
-# # Example lists of parameters
-# enclosure_ids <- c("E01", "E02", "E07", "E08", "E09", "E10", "E12", "E14", "E16", "E17", "E18", "E19", "E23", "E24", "L01")  # list of enclosure ids
-# max_depths <- list(19.5, 19.5, 16.5, 16.5, 16.5, 16.5, 17.5, 19.5, 19.0, 18.0, 17.5, 16.0, 15.5, 16.5, 20.5)  # corresponding max depths
-
-# # Example lists of parameters
-enclosure_ids <- c("E01", "E02", "E07")  # list of enclosure ids
-max_depths <- list(19.5, 19.5, 16.5)  # corresponding max depths
-
-
-parameter_names <- c("oxygen.concentration", "water.temperature", "chlorophyll.a")  # list of parameter names
-contour_breaks_list <- list(
-  list(contour_breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18)),
-  list(contour_breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22)),
-  list(contour_breaks = c(6, 7, 8, 9, 10, 11)),
-  list(contour_breaks = c(200, 250, 300, 350, 400, 450, 500)),
-  list(contour_breaks = c(0, 20, 40, 60, 80, 100, 120)),
-  list(contour_breaks = c(-1, 0, 1, 2, 3, 4, 5)),
-  list(contour_breaks = c(-3000, 0, 3000, 6000))
-)  # list of contour breaks for each parameter
-
-# Create plots iteratively
-plots <- create_plots(data = data_12,
-                      enclosure_ids = enclosure_ids,
-                      max_depths = max_depths,
-                      parameter_names = parameter_names,
-                      contour_breaks_list = contour_breaks_list)
-
-# Example usage:
-# Access plots for a specific enclosure id
-#print(plots[["E01"]])
-
-# Access plots for a specific parameter in a specific enclosure id
-#print(plots[["E01"]][["oxygen.concentration"]])
-
-#png(filename = "path/to/your/plot.png")
-

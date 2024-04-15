@@ -9,8 +9,8 @@ library(scales)
 library(rLakeAnalyzer)
 library(metR)
 
-# Bring in our data frame with the obvious outliers removed
-data <- no_boxplot_outliers
+# Bring in our data frame with all outliers removed
+data <- cleaned_final
 
 # Make a column with just the date
 data <- data %>% mutate(sampledate = date(profile.datetime))
@@ -41,9 +41,6 @@ interpDatao2 <- function(observationDF, date, maxdepth) {
   yout = approx(x = a$specified.depth, y = a$o2, xout = c(0:maxdepth), rule = 2)
   return(yout$y)
 }
-
-# max depths: 
-# E01 19.5
 
 maxdepth = 19.5 # depth of the lowest sample
 usedatesME = data_12 %>% dplyr::distinct(sampledate)
