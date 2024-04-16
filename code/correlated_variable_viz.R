@@ -5,6 +5,7 @@
 library(tidyverse)
 library(lubridate)
 library(corrplot)
+library(ggcorrplot)
 
 # grabs master_cleaned_3 instead of master_times because we want the data frame before we removed the unnecessary columns
 
@@ -36,13 +37,24 @@ master_times %>%
 
 # subset to numeric columns only
 subset <- master_times %>%
-  select(c(water.temperature:oxygen.concentration))
+  select(c(water.temperature:photosynthetically.active.radiation.up)) %>%
+  select(-c(depth, power)) %>% # remove depth and power columns
+  rename(PAR.up = photosynthetically.active.radiation.up) # shorten PAR column name
 
 # create correlation matrix
 correlation_matrix <- cor(subset)
 
 # plot correlation matrix
 plot.new()
+{plot.new(); dev.off()}
 par(mfrow=c(1,1))
+
+# old version
 corrplot(correlation_matrix, method = "color", type = "upper", 
          order = "hclust", addrect = 8)
+
+# new version
+ggcorrplot(correlation_matrix, hc.order = TRUE, type = "lower",
+           outline.col = "white", lab = TRUE,
+           colors = c("#6D9EC1", "white", "#E46726"),
+           legend.title = "Correlation")
