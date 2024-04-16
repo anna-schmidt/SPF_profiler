@@ -19,10 +19,10 @@ data <- data %>% mutate(sampledate = date(profile.datetime))
 #data$date <- as.character(data$date)
 
 # Make a subset of the data frame with just noon values and just E01
-data_12 <- data %>% subset(hour_profile.datetime == "12") %>% subset(enclosure == "E07")
+data_12 <- data %>% subset(hour_profile.datetime == "12") %>% subset(enclosure == "L01")
 
 # Define our parameter of interest
-data_12$o2 <- data_12$oxygen.concentration
+data_12$o2 <- data_12$water.temperature
 
 #Function O2
 interpDatao2 <- function(observationDF, date, maxdepth) {
@@ -81,4 +81,23 @@ ggplot(f2MEo2) +
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 14),
         panel.grid = element_blank(),
-        legend.position = "left")
+        legend.position = "left") +
+  geom_line(data = data_12, aes(x=sampledate, y=thermo.depth), color = "black", lwd = 0.8) #thermocline depth line
+
+
+#### calculate thermocline depth 
+temp_TD <- data_12 %>%
+  select(sampledate, specified.depth, water.temperature) %>%
+  rename(datetime = sampledate) %>%
+  pivot_wider(names_from = specified.depth, values_from = water.temperature) 
+
+# renaming the column names to include 'wtr_'  Otherwise, rLakeAnaylzer will not run!
+colnames(temp_TD)[-1] = paste0('wtr_',colnames(temp_TD)[-1])
+
+# Calculate thermocline depth
+thermo_depth <- ts.thermo.depth(temp_TD, na.rm = TRUE)
+
+#bind thermocline depth back to main dataframe 
+data_12 <- left_join(data_12, thermo_depth, by = c("sampledate" = "datetime")) |> 
+  mutate(doy = yday(sampledate))
+
