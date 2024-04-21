@@ -6,6 +6,7 @@ library(tidyverse)
 library(lubridate)
 library(corrplot)
 library(ggcorrplot)
+library(patchwork)
 
 # grabs master_cleaned_3 instead of master_times because we want the data frame before we removed the unnecessary columns
 
@@ -54,7 +55,32 @@ corrplot(correlation_matrix, method = "color", type = "upper",
          order = "hclust", addrect = 8)
 
 # new version
-ggcorrplot(correlation_matrix, hc.order = TRUE, type = "lower",
+p1 <- ggcorrplot(correlation_matrix, hc.order = TRUE, type = "lower",
            outline.col = "white", lab = TRUE,
            colors = c("#6D9EC1", "white", "#E46726"),
            legend.title = "Correlation")
+
+# another way we could do this is a pair plot
+# create subset with randomly sampled 100,000 rows
+subset_2 <- subset[sample(nrow(subset), 100000), ]
+library(GGally)
+ggpairs(subset_2)
+
+p2 <- ggplot(subset_2, aes(x = oxygen.satuation, y = oxygen.concentration)) + geom_point(color = "grey") + theme_bw() + theme(panel.grid.major = element_blank())
+
+p3 <- ggplot(subset_2, aes(x = chlorophyll.a, y = chlorophyll..RFU.)) + geom_point(color = "grey") + theme_bw() + theme(panel.grid.major = element_blank())
+
+p4 <- ggplot(subset_2, aes(x = phycocyanin, y = phycocyanin..RFU.)) + geom_point(color = "grey") + theme_bw() + theme(panel.grid.major = element_blank())
+
+p5 <- ggplot(subset_2, aes(x = pH.value, y = pH..mV.)) + geom_point(color = "grey") + theme_bw() + theme(panel.grid.major = element_blank())
+
+# plot all together
+p1 + free(p2/p3/p4/p5) + plot_layout(widths = c(3, 1)) + plot_annotation(tag_levels = 'A')
+
+# why are there different lines for pH?
+master_times_2 <- master_times[sample(nrow(master_times), 10000), ]
+
+ggplot(master_times_2, aes(x = phycocyanin, y = phycocyanin..RFU.)) + 
+  geom_point(aes(color = enclosure)) +
+  facet_wrap(~enclosure)
+# the lines match up with different mesocosms. perhaps due to slight differences in the sensors.

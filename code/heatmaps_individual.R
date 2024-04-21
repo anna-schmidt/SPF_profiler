@@ -15,6 +15,8 @@ data <- cleaned_final
 # Make a column with just the date
 data <- data %>% mutate(sampledate = date(profile.datetime))
 
+table(data$sampledate)
+
 # Make date column character so the plotting works
 #data$date <- as.character(data$date)
 
