@@ -15,8 +15,10 @@ data <- cleaned_final
 # Make a column with just the date
 data <- data %>% mutate(sampledate = date(profile.datetime))
 
-# Make a subset of the data frame with just noon values
-data_12 <- data %>% subset(hour_profile.datetime == "12") 
+# Make a subset of the data frame with just noon values and with just the mesocosms we're putting in this figure
+data_12 <- data %>% subset(hour_profile.datetime == "12") %>%
+  #subset(enclosure %in% c("E07", "E17", "E19", "E23", "E01", "E09", "E18", "E24")) %>%
+  subset(chlorophyll.a < 20)
 
 # FUNCTION
 test_function <- function(data, enclosure.id, parameter.name, max_depth, contour_breaks) {
@@ -80,40 +82,40 @@ test_function <- function(data, enclosure.id, parameter.name, max_depth, contour
     scale_x_date(limits = as.Date(c("2023-04-25", "2023-06-01"))) +
     theme(legend.text = element_text(size = 11),
           legend.title = element_text(size = 14),
-          axis.text = element_text(size = 12),
-          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 22),
+          axis.title = element_text(size = 24),
           panel.grid = element_blank(),
           legend.position = "left")
 }
 
 # Example usage:
-test_function(data = data_12, enclosure.id = "E01", max_depth = 20,
-              parameter.name = "chlorophyll.a",  
-              contour_breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26))
+# test_function(data = data_12, enclosure.id = "E01", max_depth = 20,
+#               parameter.name = "chlorophyll.a",  
+#               contour_breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26))
 
 # Iterating over all mesocosms:
 
 # List of enclosure IDs and their corresponding max depths
 enclosure_info <- list(
-  "E01" = 19.5,
-  "E02" = 19.5,
-  "E07" = 16.5,
-  "E08" = 16.5,
-  "E09" = 16.5,
-  "E10" = 16.5,
-  "E12" = 17.5,
-  "E14" = 19.5,
-  "E16" = 19.0,
-  "E17" = 18.0,
-  "E18" = 17.5,
-  "E19" = 16.0,
-  "E23" = 15.5,
-  "E24" = 16.5,
+  # "E01" = 19.5,
+  # "E02" = 19.5,
+  # "E07" = 16.5,
+  # "E08" = 16.5,
+  # "E09" = 16.5,
+  # "E10" = 16.5,
+  # "E12" = 17.5,
+  # "E14" = 19.5,
+  # "E16" = 19.0,
+  # "E17" = 18.0,
+  # "E18" = 17.5,
+  # "E19" = 16.0,
+  # "E23" = 15.5,
+  # "E24" = 16.5,
   "L01" = 20.5)
 
 # Set other parameters
 parameter_name <- "chlorophyll.a"
-contour_breaks <- c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26)
+contour_breaks <- c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
 
 # Create plots for each enclosure ID
 for (enclosure_id in names(enclosure_info)) {
@@ -127,7 +129,7 @@ for (enclosure_id in names(enclosure_info)) {
                         contour_breaks = contour_breaks)
   
   # Construct file name
-  file_name <- paste0("heatmap_plots_pngs/chlorophyll/12/", enclosure_id, "_", parameter_name, ".png")
+  file_name <- paste0("heatmap_plots_pngs/chlorophyll/12/legends/", enclosure_id, "_", parameter_name, ".png")
 
   # Save the plot
   ggsave(filename = file_name, plot = plot)
