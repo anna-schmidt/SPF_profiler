@@ -1,8 +1,15 @@
-############
+#------------------------------
 # removing dates before May 04 for enclosures with fish; finding outliers using this update, and lastly, re-calculating fish stats
-############
+#------------------------------
+
+# removing pre-fish dates from ONLY fish enclosures
 no_fish <- master_times %>%
-    filter((profile.datetime >= ymd("2023-05-04") & fish_treatment == "yes") | (fish_treatment == "no"))
+  filter((profile.datetime >= ymd("2023-05-04") & fish_treatment == "yes") | (fish_treatment == "no"))
+
+
+#------------------------------
+
+# Making boxplots (commented out), removing outliers found from boxplots, trying out removing IQR threshold outliers (commented out)
 
 # Boxplots of all of our parameter values on one plot
 # plot.new()
@@ -43,9 +50,12 @@ no_boxplot_outliers <- no_fish[!no_outliers_chlorophyll.a & !no_outliers_phycocy
 # # Get rid of rows (again, whole rows) with NAs
 # no_IQR_outliers_df <- na.omit(no_IQR_outliers_df)
 
-# finish cleaning
+#------------------------------
+
+# Removing more outliers based on more boxplot assessment
+
 master_cleaning <- no_boxplot_outliers
-####-------------
+
 filtered_conduc <- master_cleaning %>%
   filter(!(enclosure == "E01" & conductivity > 300),
          !(enclosure == "E02" & conductivity > 300),
@@ -53,7 +63,6 @@ filtered_conduc <- master_cleaning %>%
          !(enclosure == "E23" & conductivity > 280))
 ####-------------removed 35 points
 
-####-------------
 filtered_chloro <- filtered_conduc %>%
   filter(!(enclosure == "E02" & chlorophyll.a > 50),
          !(enclosure == "E07" & chlorophyll.a > 75),
@@ -63,13 +72,16 @@ filtered_chloro <- filtered_conduc %>%
          !(enclosure == "E17" & chlorophyll.a > 75))
 ####------------- # removed 12 more points
 
-####-------------
 filtered_phyco <- filtered_chloro %>%
   filter(!(enclosure == "E01" & phycocyanin > 2),
          !(enclosure == "E08" & phycocyanin > 3),
          !(enclosure == "E09" & phycocyanin > 2),
          !(enclosure == "E09" & phycocyanin > 2))
-####------------- # removed 1 more points
+####------------- # removed 1 more point
+
+#------------------------------
+
+# Removing even more outliers based on profile depth plots across all times and depths
 
 cleaned_chlorophyll <- filtered_phyco%>%
   filter(!(enclosure == "E01" & specified.depth > 15 & chlorophyll.a > 15),
@@ -140,7 +152,7 @@ cleaned_final <- cleaned_oxygen %>%
 ########################################
 
 
-# Updated Fish Stats
+# Updated/Latest Version Fish Stats
 
 # load required libraries
 library(lme4)
@@ -153,6 +165,7 @@ library(tidyr)
 library(nlme)
 library(pracma) # trapz function
 
+####------------------------
 # Water temperature
 
 ## Run linear mixed-effects model to determine if there is significant variation in water temperature (continuous) over time and space (fixed effects), with or without fish (fixed effects), accounting for enclosure (random effects due to the repeated measures per enclosure)
@@ -160,33 +173,20 @@ library(pracma) # trapz function
 # re-name data set for this analysis
 fish_stats <- cleaned_final
 
-# add in a week column - month seems too broad, and day seems too fine? can discuss further...
-fish_stats$week <- as.numeric(format(as.Date(fish_stats$profile.datetime), "%U")) # Note: %U tool begins each week at Sunday
-
 # Fit the linear mixed-effects model
 
 LMM <- lmer(water.temperature ~ fish_treatment * profile.datetime * specified.depth + (1 | enclosure), data = fish_stats)
 
 # Print the summary of the model
-summary(LMM)
-
-# Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
-# Formula: water.temperature ~ fish_treatment * profile.datetime * specified.depth +  
-#     (1 | enclosure)
-#    Data: fish_stats
-# 
-# REML criterion at convergence: 895142.8
-# 
+summary(LMM) # RESULTS:
+# Linear mixed model fit by REML. t-tests use Satterthwaite's method
 # Scaled residuals: 
 #     Min      1Q  Median      3Q     Max 
 # -3.0660 -0.6326 -0.0432  0.5870  4.8420 
-# 
 # Random effects:
 #  Groups    Name        Variance Std.Dev.
 #  enclosure (Intercept) 0.01723  0.1313  
 #  Residual              0.56669  0.7528  
-# Number of obs: 394223, groups:  enclosure, 14
-# 
 # Fixed effects:
 #                                                      Estimate Std. Error         df
 # (Intercept)                                        -5.938e+03  5.676e+00  3.914e+05
@@ -206,8 +206,6 @@ summary(LMM)
 # fish_treatmentyes:specified.depth                     -2.605  0.00918 ** 
 # profile.datetime:specified.depth                    -707.513  < 2e-16 ***
 # fish_treatmentyes:profile.datetime:specified.depth     2.605  0.00920 ** 
-# ---
-# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # 
 # Correlation of Fixed Effects:
 #                 (Intr) fsh_tr prfl.d spcfd. fsh_trtmntys:p. fsh_trtmntys:s. prf.:.
@@ -218,17 +216,22 @@ summary(LMM)
 # fsh_trtmntys:s.  0.487 -0.869 -0.487 -0.560  0.869                                
 # prfl.dttm:.      0.870 -0.490 -0.870 -1.000  0.490           0.560                
 # fsh_trt:.:.     -0.487  0.869  0.487  0.560 -0.869          -1.000          -0.560
+
+
 # fit warnings:
 # Some predictor variables are on very different scales: consider rescaling
 
 
-## Re-scale?
-fish_stats$specified.depth <- scale(fish_stats$specified.depth)
-fish_stats$fish_treatment <- as.factor(fish_stats$fish_treatment)
-fish_stats$enclosure <- as.factor(fish_stats$enclosure)
-LMM <- lmer(water.temperature ~ fish_treatment * week * specified.depth + (1 | enclosure), data = fish_stats)
+## Re-scale? There was a warning message about re-scaling (commented above) - I don't think I got this message when I went by week instead of all times
 
-summary(LMM)
+# fish_stats$week <- as.numeric(format(as.Date(fish_stats$profile.datetime), "%U")) # Note: %U tool begins each week at Sunday
+
+#fish_stats$specified.depth <- scale(fish_stats$specified.depth)
+#fish_stats$fish_treatment <- as.factor(fish_stats$fish_treatment)
+#fish_stats$enclosure <- as.factor(fish_stats$enclosure)
+#LMM <- lmer(water.temperature ~ fish_treatment * week * specified.depth + (1 | enclosure), data = fish_stats)
+
+#summary(LMM)
 
 # Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
 # Formula: water.temperature ~ fish_treatment * week * specified.depth +  
@@ -309,18 +312,28 @@ anova(LMM)
 # week and specified depth also have a significant effect on water temp
 # fish_treatment:profile.datetime = significant; fish_treatment:specified.depth = significant; this means that the effect of fish treatment on water temp varies by time and depth- best to proceed with visualization to fully grasp the complexity of the data set!
 
+# NOON Water temp
+
+unique(fish_stats$hour_profile.datetime)
+
+fish_stats_noon <- fish_stats[fish_stats$hour_profile.datetime == 12 & fish_stats$specified.depth == 18,]
+LMM_noon <- lmer(water.temperature ~ fish_treatment + (1 | enclosure), data = fish_stats_noon) #boundary (singular) fit: see ?isSingular... try t-test?
+anova(LMM_noon)
+
+t.test(water.temperature ~ fish_treatment, data = fish_stats_noon) # p values at noon vary by depth - very significant for more shallow depths; becomes less significant around 15 m-17.5 m (p=0.04-0.02); no significance at 18 m (p=0.6935)
+
 #------------------------------
 
 # Chlorophyll
 
-# Use Area Under the Curve & ANOVA analysis
+# Use Area Under the Curve & t.test analysis
 
-# find AUC where X = specified depth, y = chlorophyll.a
+# find AUC where X = specified depth, y = chlorophyll.a, trapz = pracma package function
+
 fish_stats2 <- fish_stats %>%
   group_by(enclosure) %>%
-  summarise(AUC = trapz(specified.depth, chlorophyll.a))
-
-# perform a t-test to see if there is a significant difference between the mean AUC for enclosures with vs. without fish
+  summarise(AUC = trapz(specified.depth, chlorophyll.a), .groups = 'drop') %>%
+  left_join(select(fish_stats, enclosure, fish_treatment) %>% distinct())
 
 with_fish <- c("E02", "E07", "E08", "E14", "E17", "E19", "E23")
 no_fish <- c("E01", "E09", "E10", "E12", "E16", "E18", "E24")
@@ -328,28 +341,48 @@ no_fish <- c("E01", "E09", "E10", "E12", "E16", "E18", "E24")
 AUC_fish <- fish_stats2$AUC[fish_stats2$enclosure %in% with_fish]
 AUC_no_fish <- fish_stats2$AUC[fish_stats2$enclosure %in% no_fish]
 
+# perform a t-test to see if there is a significant difference between the mean AUC for enclosures with vs. without fish
+
 t.test(AUC_fish, AUC_no_fish) # p-value = 0.01119
 
 # what about a linear mixed effects model for chlorophyll AUC averages...
 
-merged_data <- merge(fish_stats2, fish_stats[, c("enclosure", "fish_treatment")], by = "enclosure")
-
-LMM_chloro <- lmer(AUC ~ fish_treatment + (1 | enclosure), data = merged_data)
-# Perhaps follow-up, not sure what means but still got a p-value...
+#LMM_chloro <- lmer(AUC ~ fish_treatment + (1 | enclosure), data = merged_data)
 # Warning messages:
 #   1: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
 #                     Model failed to converge with max|grad| = 49.186 (tol = 0.002, component 1)
 #                   2: In checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,  :
 #                                     Model is nearly unidentifiable: very large eigenvalue
 #                                   - Rescale variables?
-anova(LMM_chloro)
-# fish_treatment p-value < 2.2e-16 ***
-LMM_chloro
+#anova(LMM_chloro)
+# fish_treatment p-value < 2.2e-16 ***??
 
+# turns out LMM/anova not best since only 1 AUC per enclosure - though larger p-vals, I would trust the t-test more. Or maybe there is an even better test I have not considered yet.
 
-ggplot(merged_data, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
+ggplot(fish_stats2, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
   geom_boxplot() +
   labs(title = "Chlorophyll AUC by Fish Treatment", x = "Fish Treatment", y = "Chlorophyll AUC")
+
+# NOON chlorophyll
+
+fish_stats_noon_chloro <- fish_stats %>%
+  filter(hour_profile.datetime == 12) %>%
+  group_by(enclosure) %>%
+  summarise(AUC = trapz(specified.depth, chlorophyll.a), .groups = 'drop') %>%
+  left_join(select(fish_stats, enclosure, fish_treatment) %>% distinct())
+
+AUC_fish_noon <- fish_stats_noon_chloro$AUC[fish_stats_noon_chloro$enclosure %in% with_fish]
+AUC_no_fish_noon <- fish_stats_noon_chloro$AUC[fish_stats_noon_chloro$enclosure %in% no_fish]
+
+
+#LMM_chloro_noon <- lmer(AUC ~ fish_treatment + (1 | enclosure), data = fish_stats_noon_chloro)
+#anova(LMM_chloro_noon)
+
+t.test(AUC_fish_noon, AUC_no_fish_noon, alternative="less") # p = 0.01273
+
+# ggplot(fish_stats_noon_chloro, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
+#   geom_boxplot() +
+#   labs(title = "Chlorophyll AUC by Fish Treatment at Noon", x = "Fish Treatment", y = "Chlorophyll AUC")
 
 #------------------------------
 
@@ -359,17 +392,93 @@ ggplot(merged_data, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
 
 fish_stats3 <- fish_stats %>%
   group_by(enclosure) %>%
-  summarise(AUC_P = trapz(specified.depth, phycocyanin))
+  summarise(AUC_P = trapz(specified.depth, phycocyanin), .groups = 'drop') %>%
+  left_join(select(fish_stats, enclosure, fish_treatment) %>% distinct())
 
-merged_data_P <- merge(fish_stats3, fish_stats[, c("enclosure", "fish_treatment")], by = "enclosure")
+AUC_fish_P <- fish_stats3$AUC_P[fish_stats3$enclosure %in% with_fish]
+AUC_no_fish_P <- fish_stats3$AUC_P[fish_stats3$enclosure %in% no_fish]
 
-LMM_phyco <- lmer(AUC_P ~ fish_treatment + (1 | enclosure), data = merged_data_P)
-anova(LMM_phyco)
+# again, LMM likely not most appropriate here
+#LMM_phyco <- lmer(AUC_P ~ fish_treatment + (1 | enclosure), data = fish_stats3)
+#anova(LMM_phyco)
 # fish_treatment p-value < 2.2e-16 ***
 
-ggplot(merged_data_P, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment)) +
+t.test(AUC_fish_P,AUC_no_fish_P, alternative = "less") # p = 0.02521
+ggplot(fish_stats3, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment)) +
   geom_boxplot() +
   labs(title = "Phycocyanin AUC by Fish Treatment", x = "Fish Treatment", y = "Phycocyanin AUC")
+
+
+# NOON Phycocyanin
+
+fish_stats_noon_phyco <- fish_stats %>%
+  filter(hour_profile.datetime == 12) %>%
+  group_by(enclosure) %>%
+  summarise(AUC_P = trapz(specified.depth, phycocyanin), .groups = 'drop') %>%
+  left_join(select(fish_stats, enclosure, fish_treatment) %>% distinct())
+
+AUC_fish_P_noon <- fish_stats_noon_phyco$AUC_P[fish_stats_noon_phyco$enclosure %in% with_fish]
+AUC_no_fish_P_noon <- fish_stats_noon_phyco$AUC_P[fish_stats_noon_phyco$enclosure %in% no_fish]
+
+t.test(AUC_fish_P_noon, AUC_no_fish_P_noon, alternative="less") # p = 0.05
+
+# ggplot(fish_stats_noon_phyco, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment)) +
+#   geom_boxplot() +
+#   labs(title = "Phycocyanin AUC by Fish Treatment at Noon", x = "Fish Treatment", y = "Phycocyanin AUC")
+
+
+#------------------------------
+fish_stats_noon_phyco
+
+# Just chlorophyll & phycocyanin graphed together/making things look nicer
+library(gridExtra)
+filtered_data_C <- fish_stats_noon_chloro %>% filter(enclosure != "E16")
+chloro_plot <- ggplot(fish_stats_noon_chloro, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white", outlier.shape = NA) +
+  scale_fill_viridis_d(begin=0.7) +
+  labs(x = "Fish Treatment", y = "Chlorophyll AUC") + 
+  theme(legend.position="none")
+
+filtered_data_P <- fish_stats_noon_phyco %>% filter(enclosure != "E16")
+phyco_plot<- ggplot(fish_stats_noon_phyco, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white", outlier.shape = NA) +
+  scale_fill_viridis_d(begin=0.7) +
+  labs(x = "Fish Treatment", y = "Phycocyanin AUC")+
+  theme(legend.position="none")
+
+combined_plot <- grid.arrange(
+  chloro_plot + labs(title = NULL), 
+  phyco_plot + labs(title = NULL), 
+  ncol = 2,
+  top = "Area Under the Curve by Fish Treatment at Noon"
+)
+
+# doing the same with all time points for Supplemental 3
+library(gridExtra)
+filtered_C <- fish_stats2 %>% filter(enclosure != "E16")
+chloro_plot_all <- ggplot(fish_stats2, aes(x = fish_treatment, y = AUC, fill = fish_treatment)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white", outlier.shape = NA) +
+  scale_fill_viridis_d(begin=0.7) +
+  labs(x = "Fish Treatment", y = "Chlorophyll AUC") + 
+  theme(legend.position="none")
+
+filtered_data_P <- fish_stats3 %>% filter(enclosure != "E16")
+phyco_plot_all <- ggplot(fish_stats3, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white", outlier.shape = NA) +
+  scale_fill_viridis_d(begin=0.7) +
+  labs(x = "Fish Treatment", y = "Phycocyanin AUC")+
+  theme(legend.position="none")
+
+combined_plot <- grid.arrange(
+  chloro_plot_all + labs(title = NULL), 
+  phyco_plot_all + labs(title = NULL), 
+  ncol = 2,
+  top = "Area Under the Curve by Fish Treatment, All Times"
+)
 
 #------------------------------
 
@@ -378,16 +487,37 @@ ggplot(merged_data_P, aes(x = fish_treatment, y = AUC_P, fill = fish_treatment))
 fish_stats4 <- fish_stats
 
 negative_par_count <- sum(fish_stats4$photosynthetically.active.radiation.up < 0)
-print(negative_par_count) # 40,078 rows with negative PAR! Maybe don't exclude in outlier step but exclude for PAR analysis?
+print(negative_par_count) # 40,078 rows with negative PAR! won't exclude in outlier step but exclude for PAR analysis
 
-positive_PAR <- fish_stats4[fish_stats4$photosynthetically.active.radiation.up > 0 & fish_stats4$specified.depth <= 10, ] # 350006 rows -> 206985
+positive_PAR <- fish_stats4[fish_stats4$photosynthetically.active.radiation.up >= 0, ] # 354145 rows
+
+positive_PAR2 <- fish_stats4[fish_stats4$photosynthetically.active.radiation.up >= 0 & fish_stats4$specified.depth <= 6, ] # epilimnion only; 126030 rows
+
+positive_PAR3 <- fish_stats4[fish_stats4$photosynthetically.active.radiation.up >= 0 & fish_stats4$hour_profile.datetime==12, ] # only noon; 15972 rows
+
+positive_PAR4 <- fish_stats4[fish_stats4$photosynthetically.active.radiation.up >= 0 & fish_stats4$hour_profile.datetime==12 & fish_stats4$specified.depth <= 6, ] # only noon and only epilimnion; 5579 rows
 
 # not linear... so log transform first?
 
 positive_PAR$log_PAR <- log(positive_PAR$photosynthetically.active.radiation.up + 1)
 LMM_PAR <- lmer(log_PAR ~ fish_treatment + specified.depth + (1 | enclosure), data = positive_PAR)
 summary(LMM_PAR)
-anova(LMM_PAR)
+anova(LMM_PAR) # fish barely do not sig affect PAR p= 0.08662
+
+positive_PAR2$log_PAR2 <- log(positive_PAR2$photosynthetically.active.radiation.up + 1)
+LMM_PAR2 <- lmer(log_PAR2 ~ fish_treatment + specified.depth + (1 | enclosure), data = positive_PAR2)
+summary(LMM_PAR2)
+anova(LMM_PAR2) # fish don't have as much effect in epilimnion only, p=0.1104
+
+positive_PAR3$log_PAR3 <- log(positive_PAR3$photosynthetically.active.radiation.up + 1)
+LMM_PAR3 <- lmer(log_PAR3 ~ fish_treatment + specified.depth + (1 | enclosure), data = positive_PAR3)
+summary(LMM_PAR3)
+anova(LMM_PAR3) # no sig effect just looking at noon, p=0.1547
+
+positive_PAR4$log_PAR4 <- log(positive_PAR4$photosynthetically.active.radiation.up + 1)
+LMM_PAR4 <- lmer(log_PAR4 ~ fish_treatment + specified.depth + (1 | enclosure), data = positive_PAR4)
+summary(LMM_PAR4)
+anova(LMM_PAR4) # only noon and only epilimnion, make sense with above results that p=0.105 not significant
 
 #------------------------------
 
@@ -395,16 +525,32 @@ anova(LMM_PAR)
 
 fish_stats5 <- fish_stats
 library(ggplot2)
-plot<- ggplot(fish_stats5, aes(x = specified.depth, y = pH.value, color = fish_treatment)) +
+my_palette <- viridis::viridis(2, begin = 0.7)[1:2]
+
+plot_shallow <- ggplot(subset_shallow, aes(x = specified.depth, y = pH.value, color = fish_treatment)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", color="black") +
   facet_wrap(~fish_treatment) +
   theme_minimal() +
-  labs(title = "pH vs. Depth by Fish Treatment")
+  scale_color_manual(values= my_palette) +
+  labs(title = "Epilimnion", x="Depth",y="pH")+
+  theme(legend.position = "none")
+plot_deep <- ggplot(subset_deep, aes(x = specified.depth, y = pH.value, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm", color="black") +
+  facet_wrap(~fish_treatment) +
+  theme_minimal() +
+  scale_color_manual(values= my_palette) +
+  labs(title = "Hypolimnion", x="Depth",y="pH")+
+  theme(legend.position = "none")
 
-subset_shallow <- fish_stats5[fish_stats5$specified.depth <= 10, ]
+shallow_stats
+combined <- grid.arrange(plot_shallow, plot_deep, ncol=2, top = "pH Value by Depth")
+combined
 
-subset_deep <- fish_stats5[fish_stats5$specified.depth > 10, ]
+subset_shallow <- fish_stats5[fish_stats5$specified.depth <= 6, ]
+
+subset_deep <- fish_stats5[fish_stats5$specified.depth > 6, ]
 
 LMM_pH_shallow <- lmer(pH.value ~ fish_treatment + specified.depth + (1 | enclosure), data = subset_shallow)
 summary(LMM_pH_shallow)
@@ -414,9 +560,146 @@ LMM_pH_deep <- lmer(pH.value ~ fish_treatment + specified.depth + (1 | enclosure
 summary(LMM_pH_deep)
 anova(LMM_pH_deep) # p = 0.3836 for fish_treat; for specified depth, p <2e-16 *** - perhaps depth masking fish effect?
 
-specific <- fish_stats5[fish_stats5$specified.depth == 15, ]
+extract_stats <- function(model) {
+  coef_summary <- summary(model)$coefficients
+  slope <- coef_summary["specified.depth", "Estimate"]
+  p_value <- coef_summary["specified.depth", "Pr(>|t|)"]
+  return(data.frame(slope = slope, p_value = p_value))
+}
+
+# Extract slope and p-value for shallow and deep subsets
+shallow_stats <- extract_stats(LMM_pH_shallow)
+deep_stats <- extract_stats(LMM_pH_deep)
+
+specific <- fish_stats5[fish_stats5$specified.depth == 5, ]
 t.test(pH.value ~ fish_treatment, data= specific) # p-value < 2.2e-16
 
 
+yes_fish <- subset_deep[subset_deep$fish_treatment == "yes", ]
+no_fish <- subset_deep[subset_deep$fish_treatment == "no", ]
+
+# Calculate standard deviation and variance for "yes" treated fish
+yes_fish_sd <- sd(yes_fish$pH.value)
+yes_fish_var <- var(yes_fish$pH.value)
+yes_fish_sd # 0.377
+yes_fish_var # 0.142
+min(yes_fish$pH.value) # 6.95
+max(yes_fish$pH.value) # 9.13
+
+# Calculate standard deviation and variance for "no" treated fish
+no_fish_sd <- sd(no_fish$pH.value)
+no_fish_var <- var(no_fish$pH.value)
+no_fish_sd # 0.381
+no_fish_var # 0.145
+min(no_fish$pH.value) # 6.9545
+max(no_fish$pH.value) # 9.62
 
 
+##############
+
+# Conductivity & Oxygen
+
+fish_stats6 <- fish_stats
+subset_shallow <- fish_stats6[fish_stats6$specified.depth <= 6, ]
+
+subset_deep <- fish_stats6[fish_stats6$specified.depth > 6, ]
+
+LMM_oxygen_shallow <- lmer(oxygen.concentration ~ fish_treatment + specified.depth + (1 | enclosure), data = subset_shallow)
+anova(LMM_oxygen_shallow) # p= 0.03205
+
+LMM_oxygen_deep <- lmer(oxygen.concentration ~ fish_treatment + specified.depth + (1 | enclosure), data = subset_deep)
+anova(LMM_oxygen_deep) # p= 0.5409
+
+LMM_conduc_shallow <- lmer(conductivity ~ fish_treatment + specified.depth + (1 | enclosure), data = subset_shallow)
+anova(LMM_conduc_shallow) # p= 0.5987
+
+LMM_conduc_deep <- lmer(conductivity ~ fish_treatment + specified.depth + (1 | enclosure), data = subset_deep)
+anova(LMM_conduc_deep) # p= 0.226
+
+# Plots
+
+grouped <- fish_stats6 %>%
+  group_by(specified.depth, fish_treatment) %>%
+  summarise(avg_oxygen = mean(oxygen.concentration),
+            avg_conductivity = mean(conductivity)) %>%
+  ungroup()
+
+grouped_shallow <- subset_shallow %>%
+  group_by(specified.depth, fish_treatment) %>%
+  summarise(avg_oxygen = mean(oxygen.concentration),
+            avg_conductivity = mean(conductivity)) %>%
+  ungroup()
+
+grouped_deep <- subset_deep %>%
+  group_by(specified.depth, fish_treatment) %>%
+  summarise(avg_oxygen = mean(oxygen.concentration),
+            avg_conductivity = mean(conductivity)) %>%
+  ungroup()
+
+# Plotting average oxygen concentration
+oxygen_plot <- ggplot(grouped, aes(x = avg_oxygen, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm", aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Oxygen Concentration", y = "Depth", title = "Oxygen Concentration by Depth") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_y_reverse(limits = c(20, 0))
+
+# Plotting average conductivity
+condc_plot <- ggplot(grouped, aes(x = avg_conductivity, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm",aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Conductivity", y = "Depth", title = "Conductivity by Depth") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_reverse(limits = c(20, 0))
+
+combined2 <- grid.arrange(oxygen_plot, condc_plot, ncol=2)
+combined2
+
+# SEPARATE SHALLOW & DEEP
+
+# shallow
+oxygen_shallow <- ggplot(grouped_shallow, aes(x = avg_oxygen, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm", aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Oxygen Concentration", y = "Depth", title = "Epilimnion Oxygen Concentration") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_y_reverse(limits = c(6, 0))
+
+condc_shallow <- ggplot(grouped_shallow, aes(x = avg_conductivity, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm",aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Conductivity", y = "Depth", title = "Epilimnion Conductivity") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_reverse(limits = c(6, 0))
+combined_shallow <- grid.arrange(oxygen_shallow, condc_shallow, ncol=2)
+combined_shallow
+
+# deep
+
+oxygen_deep <- ggplot(grouped_deep, aes(x = avg_oxygen, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm", aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Oxygen Concentration", y = "Depth", title = "Hypolimnion Oxygen Concentration") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_y_reverse(limits = c(20, 6))
+
+condc_deep <- ggplot(grouped_deep, aes(x = avg_conductivity, y = specified.depth, color = fish_treatment)) +
+  geom_point() +
+  geom_smooth(method = "lm",aes(group = fish_treatment), se = FALSE) +
+  labs(x = "Conductivity", y = "Depth", title = "Epilimnion Conductivity") +
+  scale_color_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_reverse(limits = c(20, 6))
+combined_deep <- grid.arrange(oxygen_deep, condc_deep, ncol=2)
+combined_deep
+
+both <- grid.arrange(combined_shallow, combined_deep, ncol=1)
+both
